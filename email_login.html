@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MailHub - Email Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+        .transition-all-300 {
+            transition: all 0.3s ease;
+        }
+        .email-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .sidebar-item:hover {
+            background-color: rgba(79, 70, 229, 0.1);
+        }
+        .content-area {
+            height: calc(100vh - 64px);
+        }
+        .login-container {
+            background-image: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Auth Modals -->
+    <div id="auth-container" class="fixed inset-0 z-50 flex items-center justify-center login-container">
+        <div class="w-full max-w-md px-6 py-8 bg-white rounded-lg shadow-xl">
+            <div class="text-center">
+                <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/c030d52d-2177-4b01-9c51-3f3d366dd06e.png" alt="MailHub logo - A stylized envelope with a blue gradient background" class="w-24 h-24 mx-auto mb-4 rounded-full">
+                <h1 class="text-3xl font-bold text-gray-800">MailHub</h1>
+                <p class="mt-2 text-gray-600">Your Personal Email Manager</p>
+            </div>
+
+            <!-- Login Form -->
+            <div id="login-form" class="mt-8">
+                <form id="loginUser">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="login-email">
+                            Email
+                        </label>
+                        <input id="login-email" type="email" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="login-password">
+                            Password
+                        </label>
+                        <input id="login-password" type="password" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <button type="submit" class="w-full px-4 py-2 font-bold text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                        Sign In
+                    </button>
+                </form>
+                
+                <div class="flex items-center justify-between mt-4">
+                    <button id="show-register" class="text-sm text-indigo-600 hover:text-indigo-800 focus:outline-none">
+                        Create Account
+                    </button>
+                    <button class="text-sm text-gray-600 hover:text-gray-800 focus:outline-none">
+                        Forgot Password?
+                    </button>
+                </div>
+                
+                <div class="mt-6">
+                    <div class="relative">
+                        <div class="absolute inset-0 flex items-center">
+                            <div class="w-full border-t border-gray-300"></div>
+                        </div>
+                        <div class="relative flex justify-center text-sm">
+                            <span class="px-2 bg-white text-gray-500">Or continue with</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6">
+                        <div id="google-signin" class="w-full flex justify-center"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Register Form -->
+            <div id="register-form" class="hidden mt-8">
+                <form id="registerUser">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="register-name">
+                            Full Name
+                        </label>
+                        <input id="register-name" type="text" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="register-email">
+                            Email
+                        </label>
+                        <input id="register-email" type="email" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="register-password">
+                            Password
+                        </label>
+                        <input id="register-password" type="password" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="register-confirm">
+                            Confirm Password
+                        </label>
+                        <input id="register-confirm" type="password" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <button type="submit" class="w-full px-4 py-2 font-bold text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                        Register
+                    </button>
+                </form>
+                
+                <div class="mt-4 text-center">
+                    <button id="show-login" class="text-sm text-indigo-600 hover:text-indigo-800 focus:outline-none">
+                        Already have an account? Sign In
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App (hidden until auth) -->
+    <div id="app-container" class="hidden">
+        <!-- Header -->
+        <header class="bg-white shadow-sm">
+            <div class="px-4 py-3 mx-auto max-w-7xl sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/4fc6d6d0-b80a-440d-a811-11dc29a38680.png" alt="MailHub logo small - blue envelope icon" class="w-10 h-10">
+                        <span class="ml-3 text-xl font-semibold text-gray-900">MailHub</span>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button id="compose-email" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            Compose
+                        </button>
+                        <div class="relative ml-3">
+                            <button id="user-menu" class="flex items-center max-w-xs text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                <img id="user-avatar" src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/5840a7e9-503c-4241-adef-371d3ca63709.png" alt="User profile picture placeholder - circular cropped portrait of a person" class="w-8 h-8 rounded-full">
+                                <span id="user-name" class="ml-2 text-sm font-medium text-gray-700">User</span>
+                            </button>
+                            <div id="user-dropdown" class="absolute right-0 z-10 hidden w-48 mt-2 origin-top-right bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                                <div class="py-1">
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Your Profile</a>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Settings</a>
+                                    <a href="#" id="logout" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Sign out</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="flex content-area">
+            <!-- Sidebar -->
+            <div class="w-64 bg-white border-r border-gray-200">
+                <nav class="px-4 py-6">
+                    <div class="space-y-1">
+                        <a href="#" class="flex items-center px-2 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md group">
+                            <svg class="w-5 h-5 mr-3 text-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12 6 6 0 010 12z" />
+                            </svg>
+                            Inbox
+                        </a>
+                        <a href="#" class="flex items-center px-2 py-2 text-sm font-medium text-gray-600 rounded-md hover:bg-gray-50 hover:text-gray-900 group sidebar-item">
+                            <svg class="w-5 h-5 mr-3 text-gray-400 group-hover:text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12 6 6 0 010 12z" />
+                            </svg>
+                            Starred
+                        </a>
+                        <a href="#" class="flex items-center px-2 py-2 text-sm font-medium text-gray-600 rounded-md hover:bg-gray-50 hover:text-gray-900 group sidebar-item">
+                            <svg class="w-5 h-5 mr-3 text-gray-400 group-hover:text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V7z" clip-rule="evenodd" />
+                            </svg>
+                            Snoozed
+                        </a>
+                        <a href="#" class="flex items-center px-2 py-2 text-sm font-medium text-gray-600 rounded-md hover:bg-gray-50 hover:text-gray-900 group sidebar-item">
+                            <svg class="w-5 h-5 mr-3 text-gray-400 group-hover:text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+                            </svg>
+                            Important
+                        </a>
+                        <a href="#" class="flex items-center px-2 py-2 text-sm font-medium text-gray-600 rounded-md hover:bg-gray-50 hover:text-gray-900 group sidebar-item">
+                            <svg class="w-5 h-5 mr-3 text-gray-400 group-hover:text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V7z" clip-rule="evenodd" />
+                            </svg>
+                            Sent
+                        </a>
+                        <a href="#" class="flex items-center px-2 py-2 text-sm font-medium text-gray-600 rounded-md hover:bg-gray-50 hover:text-gray-900 group sidebar-item">
+                            <svg class="w-5 h-5 mr-3 text-gray-400 group-hover:text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                            Trash
+                        </a>
+                    </div>
+                    <div class="pt-6 mt-6 border-t border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <h3 class="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                Labels
+                            </h3>
+                            <button class="p-1 text-gray-400 rounded-full hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="mt-2 space-y-1">
+                            <a href="#" class="flex items-center px-2 py-2 text-sm font-medium text-gray-600 rounded-md hover:bg-gray-50 hover:text-gray-900 group">
+                                <span class="w-3 h-3 mr-3.5 bg-red-500 rounded-full"></span>
+                                Work
+                            </a>
+                            <a href="#" class="flex items-center px-2 py-2 text-sm font-medium text-gray-600 rounded-md hover:bg-gray-50 hover:text-gray-900 group">
+                                <span class="w-3 h-3 mr-3.5 bg-green-500 rounded-full"></span>
+                                Personal
+                            </a>
+                            <a href="#" class="flex items-center px-2 py-2 text-sm font-medium text-gray-600 rounded-md hover:bg-gray-50 hover:text-gray-900 group">
+                                <span class="w-3 h-3 mr-3.5 bg-yellow-500 rounded-full"></span>
+                                Finance
+                            </a>
+                        </div>
+                    </div>
+                </nav>
+            </div>
+
+            <!-- Email List -->
+            <div class="flex flex-col flex-1 overflow-hidden">
+                <div class="flex items-center px-6 py-4 border-b border-gray-200">
+                    <div class="flex items-center flex-1">
+                        <button class="p-2 text-gray-400 rounded-full hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                        <button class="p-2 ml-2 text-gray-400 rounded-full hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                        <button class="p-2 ml-2 text-gray-400 rounded-full hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="flex items-center ml-6">
+                        <span class="text-sm text-gray-500">1-10 of 123</span>
+                        <button class="p-2 ml-2 text-gray-400 rounded-full hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex-1 overflow-y-auto">
+                    <!-- Email Items -->
+                    <div class="divide-y divide-gray-200">
+                        <div class="flex p-4 hover:bg-gray-50 email-item transition-all-300">
+                            <div class="flex items-center w-10">
+                                <input type="checkbox" class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+                            </div>
+                            <div class="flex items-center w-10">
+                                <button class="text-gray-400 hover:text-yellow-500 focus:outline-none">
+                                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="flex items-center mx-4 overflow-hidden w-64">
+                                <span class="text-sm font-medium text-gray-900 truncate">Amazon</span>
+                            </div>
+                            <div class="flex-1 overflow-hidden">
+                                <div class="flex items-center">
+                                    <span class="text-sm font-medium text-gray-900 truncate">Your order has shipped</span>
+                                    <span class="ml-2 text-xs text-gray-500 truncate">- Your package will arrive tomorrow</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center ml-4">
+                                <span class="text-xs text-gray-500">May 12</span>
+                                <button class="ml-2 text-gray-400 hover:text-gray-500 focus:outline-none">
+                                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- More email items would go here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Email Detail View -->
+            <div id="email-detail" class="hidden w-2/5 border-l border-gray-200">
+                <div class="flex flex-col h-full">
+                    <div class="flex items-center justify-between p-4 border-b border-gray-200">
+                        <div class="flex items-center">
+                            <button id="close-detail" class="p-2 text-gray-400 rounded-full hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                            <button class="p-2 ml-2 text-gray-400 rounded-full hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="flex items-center">
+                            <button class="p-2 text-gray-400 rounded-full hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                    <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                            <button class="p-2 ml-2 text-gray-400 rounded-full hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex-1 p-6 overflow-y-auto">
+                        <div class="mb-6">
+                            <h2 class="text-2xl font-bold text-gray-900">Your order has shipped</h2>
+                            <div class="flex items-center mt-4">
+                                <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/5568e3f2-eb3d-4416-a7ac-a869256fcec4.png" alt="Amazon logo - stylized A with arrow from A to Z" class="w-10 h-10 rounded-full">
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-gray-900">Amazon</p>
+                                    <p class="text-sm text-gray-500">no-reply@amazon.com</p>
+                                </div>
+                                <div class="ml-auto text-sm text-gray-500">May 12, 2023, 10:30 AM</div>
+                            </div>
+                        </div>
+                        <div class="prose prose-sm max-w-none">
+                            <p>Hello Valued Customer,</p>
+                            <p>We're pleased to inform you that your recent order (#12345) has shipped and is on its way to you.</p>
+                            <p>Expected delivery date: <strong>Tomorrow</strong></p>
+                            <p>Tracking number: <strong>1Z999AA10123456789</strong></p>
+                            <p>You can track your package using the link below:</p>
+                            <a href="#" class="text-indigo-600 hover:text-indigo-800">Track Your Package</a>
+                            <p class="mt-4">We hope you enjoy your purchase!</p>
+                            <p>Thank you for shopping with Amazon.</p>
+                        </div>
+                    </div>
+                    <div class="p-4 border-t border-gray-200">
+                        <button class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            Reply
+                        </button>
+                        <button class="px-4 py-2 ml-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            Forward
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Compose Modal -->
+    <div id="compose-modal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 transition-opacity" aria-hidden="true">
+                <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">​</span>
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="w-full mt-3 text-center sm:mt-0 sm:text-left">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-lg leading-6 font-medium text-gray-900">New Message</h3>
+                                <button id="close-compose" type="button" class="text-gray-400 hover:text-gray-500 focus:outline-none">
+                                    <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="mt-4">
+                                <form id="compose-form">
+                                    <div class="mb-4">
+                                        <input type="email" placeholder="To" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    </div>
+                                    <div class="mb-4">
+                                        <input type="text" placeholder="Subject" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    </div>
+                                    <div class="mb-4">
+                                        <textarea rows="15" placeholder="Compose your email..." class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button type="button" id="send-email" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm">
+                        Send
+                    </button>
+                    <button type="button" id="save-draft" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                        Save Draft
+                    </button>
+                    <button type="button" id="cancel-compose" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                        Discard
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Authentication State
+        let isAuthenticated = false;
+        let currentUser = null;
+
+        // DOM Elements
+        const authContainer = document.getElementById('auth-container');
+        const appContainer = document.getElementById('app-container');
+        
+        // Auth Form Toggle
+        const showRegister = document.getElementById('show-register');
+        const showLogin = document.getElementById('show-login');
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+
+        showRegister.addEventListener('click', () => {
+            loginForm.classList.add('hidden');
+            registerForm.classList.remove('hidden');
+        });
+
+        showLogin.addEventListener('click', () => {
+            registerForm.classList.add('hidden');
+            loginForm.classList.remove('hidden');
+        });
+
+        // Form Submission Handling
+        document.getElementById('loginUser').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            
+            // Mock authentication - in a real app, this would be an API call to Django
+            setTimeout(() => {
+                authenticateUser({
+                    name: email.split('@')[0],
+                    email: email,
+                    avatar: 'https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/621193d5-2ddf-497c-a0ef-e1ef2497e3a0.png'
+                });
+            }, 1000);
+        });
+
+        document.getElementById('registerUser').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const name = document.getElementById('register-name').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            const confirm = document.getElementById('register-confirm').value;
+            
+            if (password !== confirm) {
+                alert('Passwords do not match');
+                return;
+            }
+            
+            // Mock registration - in a real app, this would be an API call to Django
+            setTimeout(() => {
+                authenticateUser({
+                    name: name,
+                    email: email,
+                    avatar: 'https://placehold.co/150'
+                });
+            }, 1000);
+        });
+
+        // Google OAuth handling
+        function handleCredentialResponse(response) {
+            // This would be sent to your Django backend for verification
+            console.log("Google OAuth response:", response);
+            
+            // Mock response handling
+            authenticateUser({
+                name: "Google User",
+                email: "googleuser@example.com",
+                avatar: 'https://placehold.co/150'
+            });
+        }
+
+        // Initialize Google button
+        window.onload = function() {
+            google.accounts.id.initialize({
+                client_id: "YOUR_GOOGLE_CLIENT_ID",
+                callback: handleCredentialResponse,
+                ux_mode: "popup"
+            });
+            
+            google.accounts.id.renderButton(
+                document.getElementById("google-signin"),
+                { theme: "outline", size: "large" }
+            );
+        };
+
+        // User authentication
+        function authenticateUser(user) {
+            currentUser = user;
+            isAuthenticated = true;
+            
+            // Update UI
+            document.getElementById('user-name').textContent = user.name;
+            document.getElementById('user-avatar').src = user.avatar;
+            
+            authContainer.classList.add('hidden');
+            appContainer.classList.remove('hidden');
+        }
+
+        // Logout functionality
+        document.getElementById('logout').addEventListener('click', function() {
+            isAuthenticated = false;
+            currentUser = null;
+            
+            appContainer.classList.add('hidden');
+            authContainer.classList.remove('hidden');
+            
+            // Reset forms
+            document.getElementById('loginUser').reset();
+            document.getElementById('registerUser').reset();
+        });
+
+        // User dropdown menu
+        const userMenu = document.getElementById('user-menu');
+        const userDropdown = document.getElementById('user-dropdown');
+
+        userMenu.addEventListener('click', function() {
+            userDropdown.classList.toggle('hidden');
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            if (!userMenu.contains(event.target) && !userDropdown.contains(event.target)) {
+                userDropdown.classList.add('hidden');
+            }
+        });
+
+        // Email display functionality
+        const emailDetail = document.getElementById('email-detail');
+        const closeDetail = document.getElementById('close-detail');
+
+        document.querySelectorAll('.email-item').forEach(item => {
+            item.addEventListener('click', function() {
+                emailDetail.classList.remove('hidden');
+            });
+        });
+
+        closeDetail.addEventListener('click', function() {
+            emailDetail.classList.add('hidden');
+        });
+
+        // Compose email functionality
+        const composeBtn = document.getElementById('compose-email');
+        const composeModal = document.getElementById('compose-modal');
+        const closeCompose = document.getElementById('close-compose');
+        const cancelCompose = document.getElementById('cancel-compose');
+
+        composeBtn.addEventListener('click', function() {
+            composeModal.classList.remove('hidden');
+        });
+
+        closeCompose.addEventListener('click', function() {
+            composeModal.classList.add('hidden');
+        });
+
+        cancelCompose.addEventListener('click', function() {
+            composeModal.classList.add('hidden');
+        });
+
+        // In a real app, you would have more event handlers and API calls here
+    </script>
+</body>
+</html>
+
